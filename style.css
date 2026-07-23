@@ -1,0 +1,641 @@
+/* ================= TOKENS ================= */
+:root {
+  --bg: #0a0a0a;
+  --surface: #131311;
+  --border: #262622;
+  --text: #f2f2f0;
+  --text-muted: #9a9a94;
+  --text-faint: #55534d;
+  --accent: #d97757;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Source Serif 4', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --max-width: 760px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.section__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.75rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.section__num {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+/* ================= LANDING (pinned quote) ================= */
+/* Landing sengaja pakai palet terbalik (putih) — beda dari tema gelap
+   section lainnya, biar jadi kontras/statement di awal halaman. */
+.landing {
+  position: relative;
+  height: 120vh; /* ruang scroll ekstra supaya quote sempat "diam" sebelum Intro menutup */
+}
+
+.landing__inner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 1.5rem;
+  transition: opacity 0.15s linear;
+  color: #0a0a0a;
+  background: var(--accent);
+  pointer-events: auto;
+}
+
+.landing__inner.is-inactive {
+    pointer-events: none;
+}
+
+.landing__quote {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 4.5vw, 2.75rem);
+  line-height: 1.35;
+  max-width: 780px;
+  color: #0a0a0a;
+}
+
+.landing__quote-line {
+  display: block;
+  will-change: transform;
+}
+
+.landing__attribution {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--bg);
+  margin-top: 1.5rem;
+}
+
+.landing__scroll-hint {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--bg);
+  text-align: center;
+  margin-top: 3rem;
+}
+
+/* ================= INTRO (nama & role) ================= */
+.intro {
+  position: relative;
+  z-index: 2;
+  background: var(--bg);
+  min-height: 120vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: 6rem 0 6rem clamp(3rem, 10vw, 12rem);
+  max-width: none;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.intro__text { flex: 1; min-width: 260px; }
+
+.intro__name {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1.05;
+  margin-bottom: 1.25rem;
+}
+
+.intro__role {
+  position: relative;
+  height: 2rem;
+  overflow: hidden;
+}
+
+.intro__role-current {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.intro__role-current.is-animating {
+  animation: role-fade-slide 0.2s ease;
+}
+
+@keyframes role-fade-slide {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.intro__ascii-space {
+  position: relative;
+  align-self: stretch;
+  flex: 1 1 62%;
+  min-width: 360px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.intro__ascii-art {
+  position: absolute;
+  top: 50%;
+  /* Figur sengaja keluar sedikit dari viewport: yang terpotong hanya sisi kanan. */
+  right: -3rem;
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre;
+  transform: translateY(-50%) scale(var(--ascii-scale, 1));
+  transform-origin: right center;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.intro__ascii-space.is-loaded .intro__ascii-art {
+  opacity: 1;
+}
+
+/* ================= SECTION NAV ================= */
+.section-nav {
+  position: fixed;
+  top: 1.5rem;
+  right: 2rem;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 2.75rem);
+  padding: 0.65rem 0.85rem;
+  border-radius: 999px;
+  background: var(--bg);
+  backdrop-filter: blur(10px);
+  overflow: visible;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s linear 0.45s;
+  background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+
+.section-nav.is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+.section-nav a {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.section-nav a:hover,
+.section-nav a:focus-visible { color: var(--accent); }
+
+.section-nav a:not(.section-nav__inquire)::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.35);
+  transition: transform 0.3s cubic-bezier(.2, .8, .2, 1), opacity 0.2s ease;
+}
+
+.section-nav a > span {
+  position: relative;
+  z-index: 1;
+}
+
+.section-nav a:not(.section-nav__inquire):hover,
+.section-nav a:not(.section-nav__inquire):focus-visible { color: var(--bg); }
+
+.section-nav a:not(.section-nav__inquire):hover::before,
+.section-nav a:not(.section-nav__inquire):focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(2);
+}
+
+.section-nav__inquire {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg) !important;
+}
+
+.section-nav__inquire:hover,
+.section-nav__inquire:focus-visible {
+  background: var(--accent);
+  color: var(--bg) !important;
+}
+
+/* Navbar memakai kontras gelap ketika panel berlatar oranye aktif. */
+.section-nav.is-on-accent a { color: var(--bg); }
+
+.section-nav.is-on-accent a:not(.section-nav__inquire)::before {
+  background: var(--bg);
+}
+
+.section-nav.is-on-accent a:not(.section-nav__inquire):hover,
+.section-nav.is-on-accent a:not(.section-nav__inquire):focus-visible {
+  color: var(--accent);
+}
+
+.section-nav.is-on-accent .section-nav__inquire {
+  background: var(--bg);
+  color: var(--accent) !important;
+}
+
+.section-nav.is-on-accent .section-nav__inquire:hover,
+.section-nav.is-on-accent .section-nav__inquire:focus-visible {
+  background: var(--text);
+  color: var(--bg) !important;
+}
+
+/* ================= HORIZONTAL CONTENT ================= */
+/* Scroll vertikal dipakai sebagai "progress" untuk menggeser panel ke kanan. */
+.horizontal-scroll {
+  position: relative;
+}
+
+.horizontal-track {
+  position: sticky;
+  top: 0;
+  display: flex;
+  width: max-content;
+  height: 100vh;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.horizontal-track .horizontal-panel {
+  flex: 0 0 100vw;
+  width: 100vw;
+  max-width: none;
+  height: 120vh;
+  min-height: 120vh;
+  margin: 0;
+  padding: 6rem max(1.5rem, calc((100vw - var(--max-width)) / 2));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.horizontal-panel .skills__list,
+.horizontal-panel .project-stage,
+.horizontal-panel .contact__text,
+.horizontal-panel .contact__links {
+  max-width: var(--max-width);
+}
+
+/* Skills dan Contact menjadi panel aksen; konten kartu tetap gelap dan terbaca. */
+#skills.horizontal-panel,
+#contact.horizontal-panel {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+#skills.horizontal-panel .section__num,
+#contact.horizontal-panel .section__num {
+  color: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+#skills.horizontal-panel .skill-card {
+  color: var(--text);
+}
+
+#contact.horizontal-panel .contact__links a:hover {
+  border-color: var(--bg);
+  color: var(--bg);
+}
+
+/* ================= SKILLS ================= */
+.skills {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+
+.skills__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skill-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.skill-card.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skill-card__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.skill-card__count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.skill-card__tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.tag--done { color: var(--accent); border-color: var(--accent); }
+.tag--progress { color: var(--text-muted); }
+.tag--planned { color: var(--text-faint); }
+
+/* ================= PROJECTS ================= */
+.projects {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+
+.project-stage {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+.project-list {
+  flex: 1;
+}
+
+.project-stage.is-expanded .project-list {
+  align-items: flex-start;
+  max-width: 320px;
+}
+
+.project-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
+}
+
+.project-card:hover { border-color: var(--text-faint); }
+
+.project-card.is-hidden {
+  display: none;
+}
+
+.project-card__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  margin: 0.6rem 0 0.4rem;
+}
+
+.project-card__desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.project-stage.is-expanded {
+  justify-content: flex-start;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.project-detail {
+    flex: 0 0 520px;
+    position: sticky;
+    top: 120px;
+}
+
+.project-detail__content {
+    width: min(650px, 42vw);
+
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+
+    padding: 2.5rem;
+
+    transform: translateX(60px);
+    transition: transform .35s ease;
+}
+
+.project-detail.is-visible .project-detail__content {
+    transform: translateX(0);
+}
+
+.project-detail__content h3 {
+    font-size: clamp(2rem, 3vw, 3rem);
+    margin-bottom: 1rem;
+}
+
+.project-detail__content p {
+    line-height: 1.8;
+}
+
+.tag {
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.project-detail .tag { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+.project-detail__hint {
+  margin-top: 2.5rem !important;
+  font-family: var(--font-mono);
+  font-size: 0.72rem !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ================= CONTACT ================= */
+.contact {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+
+.contact__text {
+  color: var(--bg);
+  margin-bottom: 1.5rem;
+  padding-left: 20%;
+}
+
+.contact__links {
+  padding-left: 35%;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.contact__links a {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding-bottom: 2px;
+  color: var(--text);
+  border-bottom: 1px solid var(--text);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.contact__links a:hover { border-color: var(--accent); color: var(--accent); }
+
+.contact__links a::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.35);
+  transition: transform 0.3s cubic-bezier(.2, .8, .2, 1), opacity 0.2s ease;
+}
+
+.contact__links a > span {
+  position: relative;
+  z-index: 1;
+}
+
+
+
+/* ================= FOOTER ================= */
+.footer {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 720px) {
+  .horizontal-scroll { height: auto !important; }
+  .intro { padding: 5rem 1.25rem; }
+  .horizontal-track {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    transform: none !important;
+  }
+  .horizontal-track .horizontal-panel {
+    display: block;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    padding: 6rem 1.25rem;
+    overflow: visible;
+  }
+  .intro { flex-direction: column-reverse; text-align: center; padding: 5rem 1.25rem; }
+  .intro__role { display: flex; justify-content: center; }
+  .intro__ascii-space { display: none; }
+  .section-nav { top: 1rem; right: 1rem; left: 1rem; justify-content: space-between; gap: 0.5rem; padding: 0.5rem; }
+  .section-nav a { font-size: 0.62rem; }
+  .section-nav__inquire { padding: 0.45rem 0.55rem; }
+  .section-nav a:not(.section-nav__inquire)::before { width: 2rem; height: 2rem; }
+
+  .project-stage.is-expanded {
+    flex-direction: column;
+  }
+  .project-stage.is-expanded .project-list {
+    max-width: 100%;
+    align-items: center;
+  }
+}
+
+/* ================= ACCESSIBILITY ================= */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation: none !important; transition: none !important; }
+}
+
+a:focus-visible,
+.project-card:focus-visible,
+.intro__role-current:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
