@@ -14,7 +14,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     art.style.setProperty('--ascii-scale', String(scale));
   }
 
-  fetch('assets/ascii-art.txt')
+  fetch('ascii-art.txt')
     .then((response) => {
       if (!response.ok) throw new Error('ASCII art tidak ditemukan');
       return response.text();
