@@ -442,7 +442,7 @@ a { color: inherit; text-decoration: none; }
 
 .project-stage.is-expanded .project-list {
   align-items: flex-start;
-  max-width: 320px;
+  max-width: 330px;
 }
 
 .project-card {
