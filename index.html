@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinki Ariansah — Data Science Portfolio</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Source+Serif+4:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ================= LANDING (pinned, quote) ================= -->
+  <section id="landing" class="landing">
+    <div class="landing__inner">
+      <p class="landing__quote">
+        <span class="landing__quote-line" data-quote-line="1">“Life is like riding a bicycle.</span>
+        <span class="landing__quote-line" data-quote-line="2">To keep your balance,</span>
+        <span class="landing__quote-line" data-quote-line="3">you must keep moving.”</span>
+      </p>
+      <p class="landing__attribution">— Albert Einstein</p>
+      <p class="landing__scroll-hint">scroll ↓</p>
+    </div>
+  </section>
+
+  <!-- ================= NAMA & ROLE ================= -->
+  <section id="intro" class="intro">
+    <div class="intro__text">
+      <h1 class="intro__name">VINKI ARIANSAH</h1>
+
+      <div class="intro__role" data-role-cycler>
+        <span class="intro__role-current" data-role-current>Data Science</span>
+        <ul class="intro__role-list" hidden>
+          <li data-role="Data Science">Data Science</li>
+          <li data-role="Data Analyst">Data Analyst</li>
+          <li data-role="Data Engineer">Data Engineer</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="intro__ascii-space" role="img" aria-label="Figur ASCII Vinki Ariansah">
+      <pre class="intro__ascii-art" data-ascii-art></pre>
+    </div>
+  </section>
+
+  <nav class="section-nav" data-section-nav aria-label="Navigasi portofolio" aria-hidden="true">
+    <a href="#projects"><span>Work</span></a>
+    <a href="#skills"><span>Skills</span></a>
+    <a href="#intro"><span>About</span></a>
+    <a class="section-nav__inquire" href="#contact"><span>Contact</span><span aria-hidden="true">→</span></a>
+  </nav>
+
+  <!-- ================= KONTEN HORIZONTAL SETELAH INTRO ================= -->
+  <div class="horizontal-scroll" data-horizontal-scroll>
+    <div class="horizontal-track" data-horizontal-track>
+  <!-- ================= SKILLS ================= -->
+  <section id="skills" class="skills horizontal-panel">
+    <h2 class="section__title"><span class="section__num">01</span> Skills</h2>
+
+    <div class="skills__list" data-reveal-group>
+
+      <article class="skill-card" data-reveal>
+        <h3 class="skill-card__name">Python</h3>
+        <p class="skill-card__count">4 library</p>
+        <div class="skill-card__tags">
+          <span class="tag">pandas</span>
+          <span class="tag">numpy</span>
+          <span class="tag">matplotlib</span>
+          <span class="tag">scikit-learn</span>
+        </div>
+      </article>
+
+      <article class="skill-card" data-reveal>
+        <h3 class="skill-card__name">Excel</h3>
+        <p class="skill-card__count">2 fitur</p>
+        <div class="skill-card__tags">
+          <span class="tag">pivot table</span>
+          <span class="tag">VLOOKUP</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================= PROJECTS ================= -->
+  <section id="projects" class="projects horizontal-panel">
+    <h2 class="section__title"><span class="section__num">02</span> Projects</h2>
+
+    <div class="project-stage" data-project-stage>
+
+      <div class="project-list" data-project-list>
+
+        <article class="project-card" data-project-id="reject-infus">
+          <span class="tag tag--done">[DONE]</span>
+          <h3 class="project-card__title">Factory Reject Analytics Dashboard</h3>
+          <p class="project-card__desc">
+            Production Quality Monitoring System
+          </p>
+        </article>
+
+        <article class="project-card" data-project-id="tren-reject">
+          <span class="tag tag--progress">[IN PROGRESS]</span>
+          <h3 class="project-card__title">Sales Performance Dashboard</h3>
+          <p class="project-card__desc">
+            Business Intelligence & Sales Analytics
+          </p>
+        </article>
+
+        <article class="project-card" data-project-id="dashboard-downtime">
+          <span class="tag tag--planned">[PLANNED]</span>
+          <h3 class="project-card__title">Inventory Management System</h3>
+          <p class="project-card__desc">
+            Stock Control & Inventory Tracking
+          </p>
+        </article>
+
+      </div>
+
+      <div class="project-detail" data-project-detail hidden>
+        <div class="project-detail__content" data-project-detail-content>
+          <!-- diisi via JS sesuai project-id yang diklik -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= CONTACT ================= -->
+  <section id="contact" class="contact horizontal-panel">
+    <h2 class="section__title"><span class="section__num">03</span> Contacts</h2>
+    <p class="contact__text">Terbuka untuk diskusi soal data, proyek, atau kolaborasi.</p>
+    <div class="contact__links">
+      <a href="vinkiariansahhh@gmail.com" data-copy-email><span>Email</span></a>
+      <a href="#" target="_blank"><span>GitHub</span></a>
+      <a href="#" target="_blank"><span>LinkedIn</span></a>
+    </div>
+  </section>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Developed By. © <span id="year"></span> Vinki Ariansah.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
