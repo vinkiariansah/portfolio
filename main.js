@@ -100,7 +100,7 @@ function onScrollFrame(callback) {
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+-/=';
-  const STAGGER = 1000; // ms jeda "landing" antar karakter, kiri ke kanan
+  const STAGGER = 5000; // ms jeda "landing" antar karakter, kiri ke kanan
 
   function scramble(el) {
     const finalText = el.textContent.trim();
