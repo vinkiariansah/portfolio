@@ -40,8 +40,8 @@
       </div>
     </div>
 
-    <div class="intro__ascii-space" role="img" aria-label="Figur ASCII Vinki Ariansah">
-      <pre class="intro__ascii-art" data-ascii-art></pre>
+    <div class="intro__ascii-space" aria-hidden="true">
+      <div id="brain-root" class="intro__brain-root"></div>
     </div>
   </section>
 
@@ -145,5 +145,15 @@
   </footer>
 
   <script src="main.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client"
+    }
+  }
+  </script>
+  <script type="module" src="brain.js"></script>
 </body>
 </html>
