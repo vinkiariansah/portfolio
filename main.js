@@ -1,40 +1,6 @@
 // ================= FOOTER YEAR =================
 document.getElementById('year').textContent = new Date().getFullYear();
 
-// ================= INTRO: FIGUR ASCII =================
-(() => {
-  const art = document.querySelector('[data-ascii-art]');
-  const frame = art?.closest('.intro__ascii-space');
-  if (!art || !frame) return;
-
-  function fitArt() {
-    const availableHeight = frame.clientHeight * 0.96;
-    // Prioritaskan tinggi layar supaya figur terasa penuh; sisi kiri boleh terpotong.
-    const scale = (availableHeight / art.scrollHeight) * 1.06;
-    art.style.setProperty('--ascii-scale', String(scale));
-  }
-
-  fetch('ascii-art.txt')
-    .then((response) => {
-      if (!response.ok) throw new Error('ASCII art tidak ditemukan');
-      return response.text();
-    })
-    .then((text) => {
-      art.textContent = text.trim();
-      requestAnimationFrame(() => {
-        fitArt();
-        frame.classList.add('is-loaded');
-      });
-    })
-    .catch(() => {
-      art.textContent = '[ ASCII ART TIDAK DAPAT DIMUAT ]';
-      fitArt();
-      frame.classList.add('is-loaded');
-    });
-
-  new ResizeObserver(fitArt).observe(frame);
-})();
-
 // Jalankan pembaruan visual maksimal satu kali untuk setiap frame animasi.
 function onScrollFrame(callback) {
   let frameId = null;
