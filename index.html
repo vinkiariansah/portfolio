@@ -43,7 +43,70 @@
     <div class="intro__ascii-space" aria-hidden="true">
       <div id="brain-root" class="intro__brain-root"></div>
     </div>
+
+    <button
+      type="button"
+      class="biodata-trigger"
+      data-biodata-trigger
+      aria-expanded="false"
+      aria-controls="biodata"
+    >
+      <span class="biodata-trigger__ring" aria-hidden="true">
+        <span class="biodata-trigger__arrow" aria-hidden="true">&rarr;</span>
+      </span>
+      <span class="biodata-trigger__label">Biodata</span>
+    </button>
   </section>
+
+  <div class="biodata-backdrop" data-biodata-backdrop hidden></div>
+
+  <aside id="biodata" class="biodata" data-biodata aria-hidden="true">
+    <div class="biodata__panel">
+      <button type="button" class="biodata__close" data-biodata-close aria-label="Tutup biodata">
+        &times;
+      </button>
+
+      <p class="biodata__eyebrow">Biodata</p>
+      <h2 class="biodata__name">Vinki Ariansah</h2>
+
+      <dl class="biodata__list">
+        <div class="biodata__row">
+          <dt>Tempat, Tanggal Lahir</dt>
+          <dd>Jakarta, 1 Januari 2000</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Jenis Kelamin</dt>
+          <dd>Laki-laki</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Alamat</dt>
+          <dd>Jl. Contoh No. 123, Jakarta</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Email</dt>
+          <dd>vinki@example.com</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>No. Telepon</dt>
+          <dd>+62 812-3456-7890</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Pendidikan</dt>
+          <dd>S1 Ilmu Komputer</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Status</dt>
+          <dd>Lajang</dd>
+        </div>
+        <div class="biodata__row">
+          <dt>Hobi</dt>
+          <dd>Data Analysis, Membaca, Fotografi</dd>
+        </div>
+      </dl>
+
+      <p class="biodata__note">*Data di atas masih contoh (dummy).</p>
+    </div>
+  </aside>
 
   <nav class="section-nav" data-section-nav aria-label="Navigasi portofolio" aria-hidden="true">
     <a href="#projects"><span>Work</span></a>
