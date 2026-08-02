@@ -5,13 +5,22 @@ import { createRoot } from 'react-dom/client';
 // (bukan aset gambar) dan dipakai sebagai mask, bukan garis outline yang
 // digambar langsung — bentuknya terbaca dari kepadatan titik "neuron" saja.
 const HEAD_PROFILE = [
-  [0.50, 0.02], [0.60, 0.03], [0.70, 0.06], [0.78, 0.12], [0.83, 0.18],
-  [0.85, 0.21], [0.82, 0.24], [0.84, 0.27], [0.87, 0.31], [0.93, 0.36],
-  [0.98, 0.40], [0.93, 0.43], [0.94, 0.45], [0.96, 0.47], [0.92, 0.50],
-  [0.94, 0.52], [0.89, 0.55], [0.90, 0.59], [0.84, 0.64], [0.78, 0.68],
-  [0.72, 0.74], [0.68, 0.82], [0.67, 0.92], [0.66, 1.00], [0.30, 1.00],
-  [0.32, 0.90], [0.34, 0.78], [0.33, 0.66], [0.30, 0.52], [0.32, 0.38],
-  [0.38, 0.24], [0.44, 0.12]
+  // dahi & ubun-ubun
+  [0.58, 0.000], [0.70, 0.020], [0.80, 0.060], [0.855, 0.120], [0.875, 0.180],
+  // alis & mata
+  [0.885, 0.220], [0.865, 0.250], [0.875, 0.280],
+  // batang & ujung hidung
+  [0.890, 0.310], [0.930, 0.350], [0.970, 0.390], [1.000, 0.420],
+  // hidung ke bibir (amplitudo dikecilkan supaya tidak terlalu "bergerigi")
+  [0.945, 0.445], [0.965, 0.465], [0.935, 0.490], [0.955, 0.510],
+  // dagu & rahang
+  [0.905, 0.545], [0.930, 0.580], [0.875, 0.615], [0.820, 0.650], [0.750, 0.685],
+  // leher depan
+  [0.700, 0.730], [0.680, 0.820], [0.670, 0.920], [0.660, 1.000],
+  // bahu & leher belakang
+  [0.440, 1.000], [0.460, 0.900], [0.420, 0.780],
+  // belakang tengkorak (membulat penuh) sampai ubun-ubun
+  [0.330, 0.660], [0.230, 0.520], [0.220, 0.380], [0.270, 0.240], [0.380, 0.100]
 ];
 
 // Menelusuri titik-titik profil dengan kurva halus (tiap titik jadi control
