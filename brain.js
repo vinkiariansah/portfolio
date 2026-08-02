@@ -12,9 +12,9 @@ function buildBrainMask(width, height) {
   octx.fillStyle = '#000';
 
   const cx = width / 2;
-  const cy = height * 0.45;
-  const rx = Math.min(width * 0.42, height * 0.24);
-  const ry = rx * 0.8;
+  const cy = height * 0.46;
+  const rx = Math.min(width * 0.43, height * 0.42);
+  const ry = rx * 0.82;
 
   octx.beginPath();
   const steps = 160;
