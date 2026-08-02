@@ -44,8 +44,8 @@ function BrainNetwork() {
     const ctx = canvas.getContext('2d');
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const accent =
-      getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#d97757';
+    const neuronColor =
+      getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#9a9a94';
 
     let width = 0;
     let height = 0;
@@ -122,7 +122,7 @@ function BrainNetwork() {
         const midY = (a.y + b.y) / 2;
         const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 160);
         const pulse = reduceMotion ? 0.5 : Math.sin(time * e.speed + e.phase) * 0.5 + 0.5;
-        ctx.strokeStyle = accent;
+        ctx.strokeStyle = neuronColor;
         ctx.globalAlpha = Math.min(0.08 + pulse * 0.16 + proximity * 0.55, 0.9);
         ctx.lineWidth = 0.6 + proximity * 1.2;
         ctx.beginPath();
@@ -141,7 +141,7 @@ function BrainNetwork() {
 
         const glow = reduceMotion ? 0.6 : Math.sin(time * n.speed + n.phase) * 0.3 + 0.6;
         ctx.globalAlpha = Math.min(glow + proximity * 0.4, 1);
-        ctx.fillStyle = accent;
+        ctx.fillStyle = neuronColor;
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r + proximity * 1.6, 0, Math.PI * 2);
         ctx.fill();

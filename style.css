@@ -7,7 +7,6 @@
   --text-muted: #9a9a94;
   --text-faint: #55534d;
   --accent: #d97757;
-  --grey: #3a3836;
 
   --font-display: 'Fraunces', serif;
   --font-body: 'Source Serif 4', serif;
@@ -112,7 +111,7 @@ a { color: inherit; text-decoration: none; }
 .intro {
   position: relative;
   z-index: 2;
-  background: var(--grey);
+  background: var(--bg);
   min-height: 120vh;
   overflow: hidden;
   display: flex;
