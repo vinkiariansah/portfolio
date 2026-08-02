@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
-// Siluet otak dibangun dari satu outline bergelombang (bukan aset gambar) ditambah
-// batang otak kecil di bawah, lalu neuron disebar merata di dalam area itu lewat
-// jittered-grid sampling dan dihubungkan ke tetangga terdekat.
+// Siluet otak dibangun dari satu outline bergelombang (bukan aset gambar), diperbesar
+// melebihi kanvas supaya jaringan neuron memenuhi seluruh latar belakang section
+// (sisi-sisinya sengaja terpotong), lalu neuron disebar merata lewat jittered-grid
+// sampling dan dihubungkan ke tetangga terdekat.
 function buildBrainMask(width, height) {
   const off = document.createElement('canvas');
   off.width = width;
@@ -12,9 +13,9 @@ function buildBrainMask(width, height) {
   octx.fillStyle = '#000';
 
   const cx = width / 2;
-  const cy = height * 0.46;
-  const rx = Math.min(width * 0.43, height * 0.42);
-  const ry = rx * 0.82;
+  const cy = height / 2;
+  const rx = width * 0.62;
+  const ry = height * 0.62;
 
   octx.beginPath();
   const steps = 160;
@@ -31,11 +32,7 @@ function buildBrainMask(width, height) {
   octx.closePath();
   octx.fill();
 
-  octx.beginPath();
-  octx.ellipse(cx, cy + ry * 0.92, rx * 0.16, ry * 0.32, 0, 0, Math.PI * 2);
-  octx.fill();
-
-  return { imageData: octx.getImageData(0, 0, width, height), rx };
+  return octx.getImageData(0, 0, width, height);
 }
 
 function BrainNetwork() {
@@ -69,9 +66,9 @@ function BrainNetwork() {
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const { imageData: mask, rx } = buildBrainMask(width, height);
+      const mask = buildBrainMask(width, height);
 
-      const cellSize = Math.max(8, rx / 11);
+      const cellSize = Math.max(18, Math.sqrt(width * height) / 24);
       nodes = [];
       for (let gy = 0; gy < height; gy += cellSize) {
         for (let gx = 0; gx < width; gx += cellSize) {
@@ -160,7 +157,7 @@ function BrainNetwork() {
       mouse.y = e.clientY - rect.top;
     }
 
-    function handlePointerLeave() {
+    function handleWindowBlur() {
       mouse.x = -9999;
       mouse.y = -9999;
     }
@@ -174,15 +171,17 @@ function BrainNetwork() {
     animId = requestAnimationFrame(frame);
 
     window.addEventListener('resize', handleResize);
-    container.addEventListener('pointermove', handlePointerMove);
-    container.addEventListener('pointerleave', handlePointerLeave);
+    // Listener di window (bukan cuma container) supaya kursor tetap terdeteksi
+    // walau posisinya di atas elemen lain yang overlay di depan canvas (mis. nama).
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       cancelAnimationFrame(animId);
       clearTimeout(resizeTimer);
       window.removeEventListener('resize', handleResize);
-      container.removeEventListener('pointermove', handlePointerMove);
-      container.removeEventListener('pointerleave', handlePointerLeave);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('blur', handleWindowBlur);
     };
   }, []);
 
