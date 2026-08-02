@@ -1,38 +1,92 @@
 import React, { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
-// Siluet otak dibangun dari satu outline bergelombang (bukan aset gambar), diperbesar
-// melebihi kanvas supaya jaringan neuron memenuhi seluruh latar belakang section
-// (sisi-sisinya sengaja terpotong), lalu neuron disebar merata lewat jittered-grid
-// sampling dan dihubungkan ke tetangga terdekat.
-function buildBrainMask(width, height) {
+// Siluet kepala (profil menghadap kanan) digambar dari daftar titik manual
+// (bukan aset gambar), lalu di dalamnya tumbuh struktur cabang "neuron" secara
+// rekursif dari leher ke atas, dibatasi supaya tetap di dalam siluet.
+const HEAD_PROFILE = [
+  [0.50, 0.02], [0.60, 0.03], [0.70, 0.06], [0.78, 0.12], [0.83, 0.18],
+  [0.85, 0.21], [0.82, 0.24], [0.84, 0.27], [0.87, 0.31], [0.93, 0.36],
+  [0.98, 0.40], [0.93, 0.43], [0.94, 0.45], [0.96, 0.47], [0.92, 0.50],
+  [0.94, 0.52], [0.89, 0.55], [0.90, 0.59], [0.84, 0.64], [0.78, 0.68],
+  [0.72, 0.74], [0.68, 0.82], [0.67, 0.92], [0.66, 1.00], [0.30, 1.00],
+  [0.32, 0.90], [0.34, 0.78], [0.33, 0.66], [0.30, 0.52], [0.32, 0.38],
+  [0.38, 0.24], [0.44, 0.12]
+];
+
+function traceHeadPath(ctx, width, height) {
+  ctx.beginPath();
+  HEAD_PROFILE.forEach(([nx, ny], i) => {
+    const x = nx * width;
+    const y = ny * height;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+}
+
+function buildHeadMask(width, height) {
   const off = document.createElement('canvas');
   off.width = width;
   off.height = height;
   const octx = off.getContext('2d');
   octx.fillStyle = '#000';
-
-  const cx = width / 2;
-  const cy = height / 2;
-  const rx = width * 0.62;
-  const ry = height * 0.62;
-
-  octx.beginPath();
-  const steps = 160;
-  for (let i = 0; i <= steps; i++) {
-    const theta = (i / steps) * Math.PI * 2 - Math.PI / 2;
-    const bump = 1 + 0.055 * Math.sin(theta * 5 + 0.6) + 0.03 * Math.sin(theta * 9 + 1.8);
-    const notch = 0.12 * Math.exp(-((theta + Math.PI / 2) ** 2) / (2 * 0.09));
-    const r = bump - notch;
-    const x = cx + rx * r * Math.cos(theta);
-    const y = cy + ry * r * Math.sin(theta);
-    if (i === 0) octx.moveTo(x, y);
-    else octx.lineTo(x, y);
-  }
-  octx.closePath();
+  traceHeadPath(octx, width, height);
   octx.fill();
-
   return octx.getImageData(0, 0, width, height);
+}
+
+// Menumbuhkan cabang secara rekursif dari leher ke atas. Cabang yang keluar
+// dari siluet kepala dihentikan (jadi ujung/leaf), sehingga bentuknya secara
+// alami mengikuti kontur kepala tanpa perlu kliping tambahan.
+function buildTree(mask, width, height) {
+  const branches = [];
+  const nodes = [];
+  const maxDepth = 13;
+
+  function grow(x, y, angle, length, depth) {
+    const x2 = x + Math.cos(angle) * length;
+    const y2 = y + Math.sin(angle) * length;
+    const inBounds = x2 >= 0 && x2 < width && y2 >= 0 && y2 < height;
+    const insideMask = inBounds && mask.data[(Math.floor(y2) * width + Math.floor(x2)) * 4 + 3] > 80;
+    const isLeaf = depth >= maxDepth || !insideMask;
+
+    branches.push({
+      x1: x, y1: y, x2, y2, depth,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.3 + Math.random() * 0.4
+    });
+
+    if (isLeaf || Math.random() < 0.25) {
+      nodes.push({
+        x: x2, y: y2, baseX: x2, baseY: y2, depth,
+        r: isLeaf ? 1.3 + Math.random() * 1.5 : 0.9 + Math.random() * 0.8,
+        driftPhase: Math.random() * Math.PI * 2,
+        driftAngle: Math.random() * Math.PI * 2,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.7
+      });
+    }
+
+    if (!isLeaf) {
+      // Batang sengaja hampir lurus ke atas selama masih di area leher (sempit),
+      // baru boleh menyebar lebar begitu sudah "keluar" ke area tengkorak yang
+      // lebih lega — dicek dari posisi Y, bukan kedalaman, biar adaptif.
+      const clearedNeck = y2 < height * 0.68;
+      const childCount = !clearedNeck ? 1 : depth < 3 ? 2 : Math.random() < 0.65 ? 2 : 1;
+      for (let i = 0; i < childCount; i++) {
+        const spread = clearedNeck ? 0.28 + Math.random() * 0.4 : 0.04 + Math.random() * 0.06;
+        const dir = childCount === 1 ? (Math.random() < 0.5 ? -1 : 1) : i === 0 ? -1 : 1;
+        const childAngle = angle + dir * spread * (0.5 + Math.random() * 0.7);
+        const decay = clearedNeck ? 0.86 : 0.88;
+        const childLength = length * (decay + Math.random() * 0.05);
+        grow(x2, y2, childAngle, childLength, depth + 1);
+      }
+    }
+  }
+
+  grow(width * 0.48, height * 0.995, -Math.PI / 2, height * 0.16, 0);
+  return { branches, nodes };
 }
 
 function BrainNetwork() {
@@ -44,13 +98,13 @@ function BrainNetwork() {
     const ctx = canvas.getContext('2d');
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const neuronColor =
-      getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#9a9a94';
+    const accent =
+      getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#d97757';
 
     let width = 0;
     let height = 0;
+    let branches = [];
     let nodes = [];
-    let edges = [];
     let animId = null;
     let resizeTimer = null;
     const mouse = { x: -9999, y: -9999 };
@@ -66,46 +120,10 @@ function BrainNetwork() {
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const mask = buildBrainMask(width, height);
-
-      const cellSize = Math.max(18, Math.sqrt(width * height) / 24);
-      nodes = [];
-      for (let gy = 0; gy < height; gy += cellSize) {
-        for (let gx = 0; gx < width; gx += cellSize) {
-          const x = gx + (Math.random() - 0.5) * cellSize * 0.85;
-          const y = gy + (Math.random() - 0.5) * cellSize * 0.85;
-          if (x < 0 || y < 0 || x >= width || y >= height) continue;
-          const alphaIndex = (Math.floor(y) * width + Math.floor(x)) * 4 + 3;
-          if (mask.data[alphaIndex] > 80) {
-            nodes.push({
-              x,
-              y,
-              baseX: x,
-              baseY: y,
-              r: 1.2 + Math.random() * 1.3,
-              phase: Math.random() * Math.PI * 2,
-              speed: 0.5 + Math.random() * 0.7
-            });
-          }
-        }
-      }
-
-      edges = [];
-      const maxDist = cellSize * 2.3;
-      for (let i = 0; i < nodes.length; i++) {
-        const candidates = [];
-        for (let j = 0; j < nodes.length; j++) {
-          if (i === j) continue;
-          const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
-          if (d < maxDist) candidates.push({ j, d });
-        }
-        candidates.sort((a, b) => a.d - b.d);
-        candidates.slice(0, 4).forEach(({ j }) => {
-          if (i < j) {
-            edges.push({ a: i, b: j, phase: Math.random() * Math.PI * 2, speed: 0.3 + Math.random() * 0.4 });
-          }
-        });
-      }
+      const mask = buildHeadMask(width, height);
+      const tree = buildTree(mask, width, height);
+      branches = tree.branches;
+      nodes = tree.nodes;
 
       canvas.classList.add('is-loaded');
     }
@@ -114,37 +132,57 @@ function BrainNetwork() {
       ctx.clearRect(0, 0, width, height);
       const time = t / 1000;
 
-      edges.forEach((e) => {
-        const a = nodes[e.a];
-        const b = nodes[e.b];
-        if (!a || !b) return;
-        const midX = (a.x + b.x) / 2;
-        const midY = (a.y + b.y) / 2;
-        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 160);
-        const pulse = reduceMotion ? 0.5 : Math.sin(time * e.speed + e.phase) * 0.5 + 0.5;
-        ctx.strokeStyle = neuronColor;
-        ctx.globalAlpha = Math.min(0.08 + pulse * 0.16 + proximity * 0.55, 0.9);
-        ctx.lineWidth = 0.6 + proximity * 1.2;
+      // Garis siluet kepala, digambar tipis dengan sedikit glow.
+      ctx.save();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1.25;
+      ctx.globalAlpha = 0.55;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 6;
+      traceHeadPath(ctx, width, height);
+      ctx.stroke();
+      ctx.restore();
+
+      // Cabang-cabang "neuron": makin dalam (menuju ujung ranting) makin tipis
+      // dan makin redup. Geometrinya statis (tidak digoyang) supaya sambungan
+      // antar cabang tetap rapi; yang bergerak cuma kilaunya (pulse halus).
+      branches.forEach((b) => {
+        const midX = (b.x1 + b.x2) / 2;
+        const midY = (b.y1 + b.y2) / 2;
+        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 140);
+        const pulse = reduceMotion ? 0.5 : Math.sin(time * b.speed + b.phase) * 0.5 + 0.5;
+        const depthFade = Math.max(0.25, 1 - b.depth / 12);
+
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = Math.min((0.2 + pulse * 0.15) * depthFade + proximity * 0.5, 0.95);
+        ctx.lineWidth = Math.max(0.5, 2.6 * depthFade) + proximity * 1;
         ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
+        ctx.moveTo(b.x1, b.y1);
+        ctx.lineTo(b.x2, b.y2);
         ctx.stroke();
       });
 
+      // Node "neuron": pulsa kilau + gerak melayang sangat kecil (jangan agresif).
       nodes.forEach((n) => {
-        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - n.x, mouse.y - n.y) / 140);
-
         if (!reduceMotion) {
-          n.x = n.baseX + Math.sin(time * n.speed + n.phase) * 1.2 - proximity * (mouse.x - n.baseX) * 0.06;
-          n.y = n.baseY + Math.cos(time * n.speed * 0.8 + n.phase) * 1.2 - proximity * (mouse.y - n.baseY) * 0.06;
+          const drift = 1.1;
+          n.x = n.baseX + Math.cos(n.driftAngle + time * 0.15) * drift;
+          n.y = n.baseY + Math.sin(n.driftAngle + time * 0.15) * drift;
         }
 
-        const glow = reduceMotion ? 0.6 : Math.sin(time * n.speed + n.phase) * 0.3 + 0.6;
-        ctx.globalAlpha = Math.min(glow + proximity * 0.4, 1);
-        ctx.fillStyle = neuronColor;
+        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - n.x, mouse.y - n.y) / 130);
+        const glow = reduceMotion ? 0.6 : Math.sin(time * n.speed + n.phase) * 0.35 + 0.65;
+        const depthFade = Math.max(0.35, 1 - n.depth / 12);
+
+        ctx.save();
+        ctx.fillStyle = accent;
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = 4 + proximity * 6;
+        ctx.globalAlpha = Math.min(glow * depthFade + proximity * 0.4, 1);
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + proximity * 1.6, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, n.r + proximity * 1.4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       });
 
       ctx.globalAlpha = 1;
@@ -171,8 +209,6 @@ function BrainNetwork() {
     animId = requestAnimationFrame(frame);
 
     window.addEventListener('resize', handleResize);
-    // Listener di window (bukan cuma container) supaya kursor tetap terdeteksi
-    // walau posisinya di atas elemen lain yang overlay di depan canvas (mis. nama).
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('blur', handleWindowBlur);
 
