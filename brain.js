@@ -14,14 +14,25 @@ const HEAD_PROFILE = [
   [0.38, 0.24], [0.44, 0.12]
 ];
 
+const MAX_DEPTH = 13;
+
+// Menelusuri titik-titik profil dengan kurva halus (tiap titik jadi control
+// point, kurva sebenarnya lewat titik tengah antar-titik) supaya garis wajah
+// mulus, bukan garis lurus patah-patah.
 function traceHeadPath(ctx, width, height) {
+  const pts = HEAD_PROFILE.map(([nx, ny]) => [nx * width, ny * height]);
+  const last = pts[pts.length - 1];
+  const first = pts[0];
+
   ctx.beginPath();
-  HEAD_PROFILE.forEach(([nx, ny], i) => {
-    const x = nx * width;
-    const y = ny * height;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
+  ctx.moveTo((last[0] + first[0]) / 2, (last[1] + first[1]) / 2);
+  for (let i = 0; i < pts.length; i++) {
+    const curr = pts[i];
+    const next = pts[(i + 1) % pts.length];
+    const midX = (curr[0] + next[0]) / 2;
+    const midY = (curr[1] + next[1]) / 2;
+    ctx.quadraticCurveTo(curr[0], curr[1], midX, midY);
+  }
   ctx.closePath();
 }
 
@@ -42,7 +53,15 @@ function buildHeadMask(width, height) {
 function buildTree(mask, width, height) {
   const branches = [];
   const nodes = [];
-  const maxDepth = 13;
+  const maxDepth = MAX_DEPTH;
+
+  // Otak cuma menempati bagian atas tengkorak (kira-kira mulai dari alis ke
+  // atas). Batang naik ke sana dengan "menuju" satu titik target di tengah
+  // tengkorak (bukan random-walk) supaya selalu sampai dengan aman, tanpa
+  // pernah nyasar keluar leher/rahang yang sempit karena akumulasi noise.
+  const brainYLimit = height * 0.4;
+  const brainTargetX = width * 0.54;
+  const brainTargetY = height * 0.26;
 
   function grow(x, y, angle, length, depth) {
     const x2 = x + Math.cos(angle) * length;
@@ -69,23 +88,29 @@ function buildTree(mask, width, height) {
     }
 
     if (!isLeaf) {
-      // Batang sengaja hampir lurus ke atas selama masih di area leher (sempit),
-      // baru boleh menyebar lebar begitu sudah "keluar" ke area tengkorak yang
-      // lebih lega — dicek dari posisi Y, bukan kedalaman, biar adaptif.
-      const clearedNeck = y2 < height * 0.68;
-      const childCount = !clearedNeck ? 1 : depth < 3 ? 2 : Math.random() < 0.65 ? 2 : 1;
+      // Batang tetap satu garis nyaris lurus ke atas sampai mencapai area
+      // otak; baru di sana boleh menyebar lebar mengisi tengkorak sampai ke
+      // dahi/belakang kepala, bukan cuma lurus ke ubun-ubun.
+      const inBrain = y2 < brainYLimit;
+      const childCount = !inBrain ? 1 : depth < 5 ? 2 : Math.random() < 0.8 ? 2 : 1;
       for (let i = 0; i < childCount; i++) {
-        const spread = clearedNeck ? 0.28 + Math.random() * 0.4 : 0.04 + Math.random() * 0.06;
-        const dir = childCount === 1 ? (Math.random() < 0.5 ? -1 : 1) : i === 0 ? -1 : 1;
-        const childAngle = angle + dir * spread * (0.5 + Math.random() * 0.7);
-        const decay = clearedNeck ? 0.86 : 0.88;
+        let childAngle;
+        if (inBrain) {
+          const spread = 0.3 + Math.random() * 0.45;
+          const dir = childCount === 1 ? (Math.random() < 0.5 ? -1 : 1) : i === 0 ? -1 : 1;
+          childAngle = angle + dir * spread * (0.5 + Math.random() * 0.7);
+        } else {
+          const targetAngle = Math.atan2(brainTargetY - y2, brainTargetX - x2);
+          childAngle = targetAngle + (Math.random() - 0.5) * 0.12;
+        }
+        const decay = inBrain ? 0.86 : 0.9;
         const childLength = length * (decay + Math.random() * 0.05);
         grow(x2, y2, childAngle, childLength, depth + 1);
       }
     }
   }
 
-  grow(width * 0.48, height * 0.995, -Math.PI / 2, height * 0.16, 0);
+  grow(width * 0.48, height * 0.995, -Math.PI / 2, height * 0.15, 0);
   return { branches, nodes };
 }
 
@@ -143,12 +168,20 @@ function BrainNetwork() {
       ctx.stroke();
       ctx.restore();
 
-      // Cabang-cabang "neuron": makin dalam (menuju ujung ranting) makin tipis
-      // dan makin redup. Geometrinya statis (tidak digoyang) supaya sambungan
-      // antar cabang tetap rapi; yang bergerak cuma kilaunya (pulse halus).
+      // Cabang "neuron" digoyang pelan seperti tertiup angin: makin jauh dari
+      // batang (makin dalam), makin besar simpangannya — mirip ranting asli.
+      // Offset dihitung linear terhadap depth, jadi selisih antar-sambungan
+      // kecil sekali dan cabang tetap terlihat menyambung rapi.
+      const wind = reduceMotion ? 0 : Math.sin(time * 0.35);
+
       branches.forEach((b) => {
-        const midX = (b.x1 + b.x2) / 2;
-        const midY = (b.y1 + b.y2) / 2;
+        const sway = wind * (b.depth / MAX_DEPTH) * 6;
+        const x1 = b.x1 + sway;
+        const y1 = b.y1;
+        const x2 = b.x2 + sway;
+        const y2 = b.y2;
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
         const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 140);
         const pulse = reduceMotion ? 0.5 : Math.sin(time * b.speed + b.phase) * 0.5 + 0.5;
         const depthFade = Math.max(0.25, 1 - b.depth / 12);
@@ -157,17 +190,21 @@ function BrainNetwork() {
         ctx.globalAlpha = Math.min((0.2 + pulse * 0.15) * depthFade + proximity * 0.5, 0.95);
         ctx.lineWidth = Math.max(0.5, 2.6 * depthFade) + proximity * 1;
         ctx.beginPath();
-        ctx.moveTo(b.x1, b.y1);
-        ctx.lineTo(b.x2, b.y2);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       });
 
-      // Node "neuron": pulsa kilau + gerak melayang sangat kecil (jangan agresif).
+      // Node "neuron": pulsa kilau + goyangan pohon + gerak melayang kecil.
       nodes.forEach((n) => {
+        const sway = wind * (n.depth / MAX_DEPTH) * 6;
         if (!reduceMotion) {
-          const drift = 1.1;
-          n.x = n.baseX + Math.cos(n.driftAngle + time * 0.15) * drift;
+          const drift = 1.6;
+          n.x = n.baseX + sway + Math.cos(n.driftAngle + time * 0.15) * drift;
           n.y = n.baseY + Math.sin(n.driftAngle + time * 0.15) * drift;
+        } else {
+          n.x = n.baseX;
+          n.y = n.baseY;
         }
 
         const proximity = Math.max(0, 1 - Math.hypot(mouse.x - n.x, mouse.y - n.y) / 130);
