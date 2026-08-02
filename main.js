@@ -127,6 +127,72 @@ function onScrollFrame(callback) {
   startAuto();
 })();
 
+// ================= TEKS: SCRAMBLE REVEAL SAAT MASUK VIEWPORT =================
+(() => {
+  const targets = document.querySelectorAll('[data-scramble]');
+  if (!targets.length) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+-/=';
+  const STAGGER = 45; // ms jeda "landing" antar karakter, kiri ke kanan
+
+  function scramble(el) {
+    const finalText = el.textContent.trim();
+    if (!finalText) return;
+
+    if (reduceMotion) {
+      el.textContent = finalText;
+      return;
+    }
+
+    const chars = finalText.split('');
+    const revealAt = chars.map((_, i) => i * STAGGER + Math.random() * STAGGER);
+    let startTime = null;
+
+    function frame(timestamp) {
+      if (startTime === null) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+
+      let output = '';
+      let settled = 0;
+
+      chars.forEach((ch, i) => {
+        if (ch === ' ') { output += ' '; settled++; return; }
+        if (elapsed >= revealAt[i]) {
+          output += ch;
+          settled++;
+        } else {
+          output += SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        }
+      });
+
+      el.textContent = output;
+
+      if (settled < chars.length) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = finalText;
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          scramble(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.6 }
+  );
+
+  targets.forEach((el) => observer.observe(el));
+})();
+
 // ================= NAVIGASI: SEMBUNYI HANYA SAAT QUOTE AWAL =================
 // ================= NAVBAR =================
 
