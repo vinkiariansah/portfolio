@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Siluet kepala (profil menghadap kanan) digambar dari daftar titik manual
-// (bukan aset gambar), lalu di dalamnya tumbuh struktur cabang "neuron" secara
-// rekursif dari leher ke atas, dibatasi supaya tetap di dalam siluet.
+// (bukan aset gambar) dan dipakai sebagai mask, bukan garis outline yang
+// digambar langsung — bentuknya terbaca dari kepadatan titik "neuron" saja.
 const HEAD_PROFILE = [
   [0.50, 0.02], [0.60, 0.03], [0.70, 0.06], [0.78, 0.12], [0.83, 0.18],
   [0.85, 0.21], [0.82, 0.24], [0.84, 0.27], [0.87, 0.31], [0.93, 0.36],
@@ -13,8 +13,6 @@ const HEAD_PROFILE = [
   [0.32, 0.90], [0.34, 0.78], [0.33, 0.66], [0.30, 0.52], [0.32, 0.38],
   [0.38, 0.24], [0.44, 0.12]
 ];
-
-const MAX_DEPTH = 13;
 
 // Menelusuri titik-titik profil dengan kurva halus (tiap titik jadi control
 // point, kurva sebenarnya lewat titik tengah antar-titik) supaya garis wajah
@@ -47,72 +45,78 @@ function buildHeadMask(width, height) {
   return octx.getImageData(0, 0, width, height);
 }
 
-// Menumbuhkan cabang secara rekursif dari leher ke atas. Cabang yang keluar
-// dari siluet kepala dihentikan (jadi ujung/leaf), sehingga bentuknya secara
-// alami mengikuti kontur kepala tanpa perlu kliping tambahan.
-function buildTree(mask, width, height) {
-  const branches = [];
+function isInsideMask(mask, width, height, x, y) {
+  if (x < 0 || y < 0 || x >= width || y >= height) return false;
+  return mask.data[(Math.floor(y) * width + Math.floor(x)) * 4 + 3] > 80;
+}
+
+// Titik-titik "neuron" disebar merata ke SELURUH siluet kepala lewat
+// jittered-grid sampling, dihubungkan ke tetangga terdekat jadi mesh, dan
+// sebagian titik terang/dekat tepi dapat "flare" (garis cahaya memancar,
+// sebagian sengaja menembus keluar garis kepala).
+function buildPointCloud(mask, width, height) {
+  const cellSize = Math.max(14, Math.sqrt(width * height) / 17);
   const nodes = [];
-  const maxDepth = MAX_DEPTH;
 
-  // Otak cuma menempati bagian atas tengkorak (kira-kira mulai dari alis ke
-  // atas). Batang naik ke sana dengan "menuju" satu titik target di tengah
-  // tengkorak (bukan random-walk) supaya selalu sampai dengan aman, tanpa
-  // pernah nyasar keluar leher/rahang yang sempit karena akumulasi noise.
-  const brainYLimit = height * 0.4;
-  const brainTargetX = width * 0.54;
-  const brainTargetY = height * 0.26;
+  for (let gy = 0; gy < height; gy += cellSize) {
+    for (let gx = 0; gx < width; gx += cellSize) {
+      const x = gx + (Math.random() - 0.5) * cellSize * 0.85;
+      const y = gy + (Math.random() - 0.5) * cellSize * 0.85;
+      if (!isInsideMask(mask, width, height, x, y)) continue;
 
-  function grow(x, y, angle, length, depth) {
-    const x2 = x + Math.cos(angle) * length;
-    const y2 = y + Math.sin(angle) * length;
-    const inBounds = x2 >= 0 && x2 < width && y2 >= 0 && y2 < height;
-    const insideMask = inBounds && mask.data[(Math.floor(y2) * width + Math.floor(x2)) * 4 + 3] > 80;
-    const isLeaf = depth >= maxDepth || !insideMask;
+      const nearEdge =
+        !isInsideMask(mask, width, height, x + cellSize * 1.4, y) ||
+        !isInsideMask(mask, width, height, x - cellSize * 1.4, y) ||
+        !isInsideMask(mask, width, height, x, y - cellSize * 1.4) ||
+        !isInsideMask(mask, width, height, x, y + cellSize * 1.4);
+      const bright = Math.random() < 0.09;
 
-    branches.push({
-      x1: x, y1: y, x2, y2, depth,
-      phase: Math.random() * Math.PI * 2,
-      speed: 0.3 + Math.random() * 0.4
-    });
+      let flare = null;
+      if (bright || (nearEdge && Math.random() < 0.22)) {
+        const rayCount = 4;
+        const baseLen = nearEdge ? cellSize * (2.2 + Math.random() * 1.6) : cellSize * (0.9 + Math.random() * 0.6);
+        flare = {
+          rays: Array.from({ length: rayCount }, (_, i) => ({
+            angle: (i / rayCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,
+            length: baseLen * (0.6 + Math.random() * 0.7)
+          }))
+        };
+      }
 
-    if (isLeaf || Math.random() < 0.25) {
       nodes.push({
-        x: x2, y: y2, baseX: x2, baseY: y2, depth,
-        r: isLeaf ? 1.3 + Math.random() * 1.5 : 0.9 + Math.random() * 0.8,
-        driftPhase: Math.random() * Math.PI * 2,
+        x, y, baseX: x, baseY: y,
+        r: bright ? 2.2 + Math.random() * 1.0 : 1 + Math.random() * 0.8,
+        bright,
+        flare,
+        depthFactor: 0.6 + Math.random() * 0.4,
         driftAngle: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.5 + Math.random() * 0.7
+        speed: 0.4 + Math.random() * 0.6
       });
-    }
-
-    if (!isLeaf) {
-      // Batang tetap satu garis nyaris lurus ke atas sampai mencapai area
-      // otak; baru di sana boleh menyebar lebar mengisi tengkorak sampai ke
-      // dahi/belakang kepala, bukan cuma lurus ke ubun-ubun.
-      const inBrain = y2 < brainYLimit;
-      const childCount = !inBrain ? 1 : depth < 5 ? 2 : Math.random() < 0.8 ? 2 : 1;
-      for (let i = 0; i < childCount; i++) {
-        let childAngle;
-        if (inBrain) {
-          const spread = 0.3 + Math.random() * 0.45;
-          const dir = childCount === 1 ? (Math.random() < 0.5 ? -1 : 1) : i === 0 ? -1 : 1;
-          childAngle = angle + dir * spread * (0.5 + Math.random() * 0.7);
-        } else {
-          const targetAngle = Math.atan2(brainTargetY - y2, brainTargetX - x2);
-          childAngle = targetAngle + (Math.random() - 0.5) * 0.12;
-        }
-        const decay = inBrain ? 0.86 : 0.9;
-        const childLength = length * (decay + Math.random() * 0.05);
-        grow(x2, y2, childAngle, childLength, depth + 1);
-      }
     }
   }
 
-  grow(width * 0.48, height * 0.995, -Math.PI / 2, height * 0.15, 0);
-  return { branches, nodes };
+  const edges = [];
+  const maxDist = cellSize * 2.3;
+  for (let i = 0; i < nodes.length; i++) {
+    const candidates = [];
+    for (let j = 0; j < nodes.length; j++) {
+      if (i === j) continue;
+      const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+      if (d < maxDist) candidates.push({ j, d });
+    }
+    candidates.sort((a, b) => a.d - b.d);
+    candidates.slice(0, 4).forEach(({ j }) => {
+      if (i < j) {
+        edges.push({ a: i, b: j, phase: Math.random() * Math.PI * 2, speed: 0.3 + Math.random() * 0.4 });
+      }
+    });
+  }
+
+  return { nodes, edges };
 }
+
+const MAX_PARALLAX = 14;
 
 function BrainNetwork() {
   const canvasRef = useRef(null);
@@ -128,11 +132,12 @@ function BrainNetwork() {
 
     let width = 0;
     let height = 0;
-    let branches = [];
     let nodes = [];
+    let edges = [];
     let animId = null;
     let resizeTimer = null;
     const mouse = { x: -9999, y: -9999 };
+    const parallax = { x: 0, y: 0 };
 
     function buildNetwork() {
       width = container.clientWidth;
@@ -146,9 +151,9 @@ function BrainNetwork() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const mask = buildHeadMask(width, height);
-      const tree = buildTree(mask, width, height);
-      branches = tree.branches;
-      nodes = tree.nodes;
+      const cloud = buildPointCloud(mask, width, height);
+      nodes = cloud.nodes;
+      edges = cloud.edges;
 
       canvas.classList.add('is-loaded');
     }
@@ -157,65 +162,83 @@ function BrainNetwork() {
       ctx.clearRect(0, 0, width, height);
       const time = t / 1000;
 
-      // Garis siluet kepala, digambar tipis dengan sedikit glow.
+      // Jaringan bergeser halus mengikuti arah kursor (parallax/tilt ringan,
+      // dibatasi MAX_PARALLAX supaya bentuk kepala tidak pernah hilang
+      // detailnya), dengan easing supaya tidak "menyentak".
+      if (!reduceMotion) {
+        const nx = Math.max(-1, Math.min(1, (mouse.x - width / 2) / (width / 2)));
+        const ny = Math.max(-1, Math.min(1, (mouse.y - height / 2) / (height / 2)));
+        parallax.x += (nx * MAX_PARALLAX - parallax.x) * 0.06;
+        parallax.y += (ny * MAX_PARALLAX - parallax.y) * 0.06;
+      } else {
+        parallax.x = 0;
+        parallax.y = 0;
+      }
+
+      // Garis siluet sangat tipis sebagai penuntun bentuk — ikut bergeser
+      // sama besar dengan parallax supaya tetap menyatu dengan titik-titik
+      // di dalamnya (bukan diam sementara isinya bergerak).
       ctx.save();
+      ctx.translate(parallax.x, parallax.y);
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 1.25;
-      ctx.globalAlpha = 0.55;
-      ctx.shadowColor = accent;
-      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.16;
       traceHeadPath(ctx, width, height);
       ctx.stroke();
       ctx.restore();
 
-      // Cabang "neuron" digoyang pelan seperti tertiup angin: makin jauh dari
-      // batang (makin dalam), makin besar simpangannya — mirip ranting asli.
-      // Offset dihitung linear terhadap depth, jadi selisih antar-sambungan
-      // kecil sekali dan cabang tetap terlihat menyambung rapi.
-      const wind = reduceMotion ? 0 : Math.sin(time * 0.35);
-
-      branches.forEach((b) => {
-        const sway = wind * (b.depth / MAX_DEPTH) * 6;
-        const x1 = b.x1 + sway;
-        const y1 = b.y1;
-        const x2 = b.x2 + sway;
-        const y2 = b.y2;
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 140);
-        const pulse = reduceMotion ? 0.5 : Math.sin(time * b.speed + b.phase) * 0.5 + 0.5;
-        const depthFade = Math.max(0.25, 1 - b.depth / 12);
-
-        ctx.strokeStyle = accent;
-        ctx.globalAlpha = Math.min((0.2 + pulse * 0.15) * depthFade + proximity * 0.5, 0.95);
-        ctx.lineWidth = Math.max(0.5, 2.6 * depthFade) + proximity * 1;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      });
-
-      // Node "neuron": pulsa kilau + goyangan pohon + gerak melayang kecil.
       nodes.forEach((n) => {
-        const sway = wind * (n.depth / MAX_DEPTH) * 6;
         if (!reduceMotion) {
           const drift = 1.6;
-          n.x = n.baseX + sway + Math.cos(n.driftAngle + time * 0.15) * drift;
-          n.y = n.baseY + Math.sin(n.driftAngle + time * 0.15) * drift;
+          n.x = n.baseX + parallax.x * n.depthFactor + Math.cos(n.driftAngle + time * 0.15) * drift;
+          n.y = n.baseY + parallax.y * n.depthFactor + Math.sin(n.driftAngle + time * 0.15) * drift;
         } else {
           n.x = n.baseX;
           n.y = n.baseY;
         }
+      });
 
+      edges.forEach((e) => {
+        const a = nodes[e.a];
+        const b = nodes[e.b];
+        if (!a || !b) return;
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const proximity = Math.max(0, 1 - Math.hypot(mouse.x - midX, mouse.y - midY) / 140);
+        const pulse = reduceMotion ? 0.5 : Math.sin(time * e.speed + e.phase) * 0.5 + 0.5;
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = Math.min(0.08 + pulse * 0.16 + proximity * 0.55, 0.9);
+        ctx.lineWidth = 0.6 + proximity * 1.2;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
+
+      nodes.forEach((n) => {
         const proximity = Math.max(0, 1 - Math.hypot(mouse.x - n.x, mouse.y - n.y) / 130);
         const glow = reduceMotion ? 0.6 : Math.sin(time * n.speed + n.phase) * 0.35 + 0.65;
-        const depthFade = Math.max(0.35, 1 - n.depth / 12);
+
+        if (n.flare) {
+          const shimmer = reduceMotion ? 0.7 : Math.sin(time * n.speed * 0.6 + n.phase) * 0.3 + 0.7;
+          ctx.save();
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 0.6;
+          n.flare.rays.forEach((ray) => {
+            ctx.globalAlpha = Math.min(0.22 * shimmer + proximity * 0.3, 0.6);
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(n.x + Math.cos(ray.angle) * ray.length, n.y + Math.sin(ray.angle) * ray.length);
+            ctx.stroke();
+          });
+          ctx.restore();
+        }
 
         ctx.save();
         ctx.fillStyle = accent;
         ctx.shadowColor = accent;
-        ctx.shadowBlur = 4 + proximity * 6;
-        ctx.globalAlpha = Math.min(glow * depthFade + proximity * 0.4, 1);
+        ctx.shadowBlur = (n.bright ? 6 : 4) + proximity * 6;
+        ctx.globalAlpha = Math.min(glow + proximity * 0.4, 1);
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r + proximity * 1.4, 0, Math.PI * 2);
         ctx.fill();
