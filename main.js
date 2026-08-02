@@ -249,7 +249,7 @@ observer.observe(introSection);
     return true;
   }
 
-  document.querySelectorAll('[data-section-nav] a[href^="#"]').forEach((link) => {
+  document.querySelectorAll('[data-section-nav] a[href^="#"], [data-hire-link]').forEach((link) => {
     link.addEventListener('click', (event) => {
       if (!scrollToHorizontalPanel(link.hash)) return;
 
@@ -400,37 +400,3 @@ observer.observe(introSection);
   });
 })();
 
-// ================= BIODATA: PANEL KLIK (BUKAN SCROLL) =================
-(() => {
-  const trigger = document.querySelector('[data-biodata-trigger]');
-  const panel = document.querySelector('[data-biodata]');
-  const backdrop = document.querySelector('[data-biodata-backdrop]');
-  const closeBtn = document.querySelector('[data-biodata-close]');
-  if (!trigger || !panel || !backdrop || !closeBtn) return;
-
-  function openBiodata() {
-    panel.classList.add('is-open');
-    panel.setAttribute('aria-hidden', 'false');
-    backdrop.hidden = false;
-    requestAnimationFrame(() => backdrop.classList.add('is-visible'));
-    trigger.setAttribute('aria-expanded', 'true');
-    closeBtn.focus();
-  }
-
-  function closeBiodata() {
-    panel.classList.remove('is-open');
-    panel.setAttribute('aria-hidden', 'true');
-    backdrop.classList.remove('is-visible');
-    trigger.setAttribute('aria-expanded', 'false');
-    setTimeout(() => { backdrop.hidden = true; }, 300);
-    trigger.focus();
-  }
-
-  trigger.addEventListener('click', openBiodata);
-  closeBtn.addEventListener('click', closeBiodata);
-  backdrop.addEventListener('click', closeBiodata);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && panel.classList.contains('is-open')) closeBiodata();
-  });
-})();

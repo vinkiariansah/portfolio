@@ -186,8 +186,8 @@ a { color: inherit; text-decoration: none; }
   opacity: 1;
 }
 
-/* ================= BIODATA TRIGGER + PANEL ================= */
-.biodata-trigger {
+/* ================= HIRE TRIGGER (LINK KE CONTACT) ================= */
+.hire-trigger {
   position: absolute;
   z-index: 1;
   right: clamp(1.25rem, 4vw, 3rem);
@@ -197,14 +197,11 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   align-items: center;
   gap: 0.65rem;
-  background: transparent;
-  border: none;
   padding: 0.5rem;
-  cursor: pointer;
   color: var(--accent);
 }
 
-.biodata-trigger__ring {
+.hire-trigger__ring {
   position: relative;
   width: 3.25rem;
   height: 3.25rem;
@@ -215,145 +212,36 @@ a { color: inherit; text-decoration: none; }
   border-radius: 50%;
 }
 
-.biodata-trigger__ring::before {
+.hire-trigger__ring::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 50%;
   border: 1px solid var(--accent);
-  animation: biodata-pulse 2.2s ease-out infinite;
+  animation: hire-pulse 2.2s ease-out infinite;
 }
 
-.biodata-trigger__arrow {
+.hire-trigger__arrow {
   font-family: var(--font-mono);
   font-size: 1.1rem;
   transition: transform 0.2s ease;
 }
 
-.biodata-trigger:hover .biodata-trigger__arrow,
-.biodata-trigger:focus-visible .biodata-trigger__arrow {
+.hire-trigger:hover .hire-trigger__arrow,
+.hire-trigger:focus-visible .hire-trigger__arrow {
   transform: translateX(3px);
 }
 
-.biodata-trigger__label {
+.hire-trigger__label {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-@keyframes biodata-pulse {
+@keyframes hire-pulse {
   0%   { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(1.7); opacity: 0; }
-}
-
-.biodata-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 199;
-  background: rgba(10, 10, 10, 0.6);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.biodata-backdrop.is-visible {
-  opacity: 1;
-}
-
-.biodata {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 200;
-  width: min(440px, 92vw);
-  height: 100vh;
-  transform: translateX(100%);
-  transition: transform 0.4s cubic-bezier(.2, .8, .2, 1);
-}
-
-.biodata.is-open {
-  transform: translateX(0);
-}
-
-.biodata__panel {
-  position: relative;
-  height: 100%;
-  overflow-y: auto;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  padding: 5rem 2.5rem 3rem;
-}
-
-.biodata__close {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.biodata__close:hover,
-.biodata__close:focus-visible {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.biodata__eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 0.5rem;
-}
-
-.biodata__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.75rem;
-  margin-bottom: 2rem;
-}
-
-.biodata__list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-
-.biodata__row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-bottom: 1.1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.biodata__row dt {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.biodata__row dd {
-  font-size: 0.95rem;
-  color: var(--text);
-}
-
-.biodata__note {
-  margin-top: 1.75rem;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-faint);
 }
 
 /* ================= SECTION NAV ================= */
@@ -815,8 +703,7 @@ a { color: inherit; text-decoration: none; }
     justify-content: center;
   }
   .intro__ascii-space { display: none; }
-  .biodata-trigger { display: none; }
-  .biodata { width: 100%; }
+  .hire-trigger { display: none; }
   .section-nav {
     top: 1rem;
     right: 1rem;
